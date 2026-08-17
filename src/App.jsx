@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
-// Diccionario de estaciones clave (Tramo Francia -> Tarragona)
 // Diccionario de estaciones clave (Orden geográfico real: Norte a Sur)
 const STATIONS = [
   { id: '79300', name: 'Barcelona - Estació de França' },
@@ -20,8 +19,8 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [trains, setTrains] = useState([]);
+  const [error, setError] = useState(false); // Nuevo estado de error
 
-  // Estado para la estación de origen y destino (Por defecto: Sants -> Cunit)
   const [origin, setOrigin] = useState('79400');
   const [destination, setDestination] = useState('71705');
 
@@ -31,28 +30,27 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Volver a buscar trenes cada vez que cambia el origen o el destino
-  useEffect(() => {
-    fetchTrains();
-  }, [origin, destination]);
-
-  const fetchTrains = async () => {
+  // Envolvemos el fetch en useCallback para evitar renders innecesarios y warnings del linter
+  const fetchTrains = useCallback(async () => {
     if (origin === destination) {
       setTrains([]);
+      setError(false);
       return;
     }
 
     setLoading(true);
+    setError(false);
+
     try {
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
-      const currentHour = now.getHours();
+      const currentHour = String(now.getHours()).padStart(2, '0'); // <-- Ajuste de 2 dígitos
 
       const travelDate = `${year}-${month}-${day}`;
 
-      // Llamamos a nuestro proxy local de Vite. ¡Adiós bloqueos CORS!
+      // Proxy local de Vite
       const targetUrl = `/api/timetables?lang=ca&fullResponse=true&originStationId=${origin}&destinationStationId=${destination}&travelingOn=${travelDate}&fromTime=${currentHour}`;
 
       const response = await fetch(targetUrl);
@@ -69,8 +67,8 @@ export default function App() {
 
           return {
             id: index,
-            departure: departure,
-            arrival: arrival,
+            departure,
+            arrival,
             duration: `${parseInt(durationStr, 10)} min`,
             status: 'Programado',
             type: 'puntual',
@@ -83,18 +81,23 @@ export default function App() {
         setTrains([]);
       }
 
-    } catch (error) {
-      console.error("Fallo detallado de la petición:", error);
-      setTrains([{ id: 1, departure: '--:--', arrival: '--:--', duration: '--', status: 'Error', type: 'retraso', line: '---' }]);
+    } catch (err) {
+      console.error("Fallo detallado de la petición:", err);
+      setTrains([]);
+      setError(true); // <-- Manejo de error más limpio
     } finally {
       setLoading(false);
     }
-  };
+  }, [origin, destination]); // Dependencias del callback
+
+  // Disparar la búsqueda al cambiar rutas
+  useEffect(() => {
+    fetchTrains();
+  }, [fetchTrains]);
 
   // Obtener nombres para la interfaz
   const originName = STATIONS.find(s => s.id === origin)?.name.split(' - ').pop();
   const destName = STATIONS.find(s => s.id === destination)?.name.split(' - ').pop();
-
   return (
     <div className="app-container">
 
@@ -113,6 +116,19 @@ export default function App() {
           </svg>
         </button>
       </header>
+
+      {/* Manejo de estados vacíos y errores */}
+      {error && !loading && (
+        <div style={{ padding: '30px', textAlign: 'center', color: '#e74c3c', background: 'var(--code-bg)', borderRadius: '12px' }}>
+          No se pudo conectar con los servidores de Rodalies.
+        </div>
+      )}
+
+      {trains.length === 0 && !loading && !error && (
+        <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text)', background: 'var(--code-bg)', borderRadius: '12px' }}>
+          No hay trenes directos programados para esta ruta.
+        </div>
+      )}
 
       {/* Selectores de Ruta */}
       <div className="route-selector">
