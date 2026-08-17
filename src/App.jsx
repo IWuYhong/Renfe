@@ -30,7 +30,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Envolvemos el fetch en useCallback para evitar renders innecesarios y warnings del linter
+  // Envolvemos el fetch en useCallback
   const fetchTrains = useCallback(async () => {
     if (origin === destination) {
       setTrains([]);
@@ -46,9 +46,13 @@ export default function App() {
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
-      const currentHour = String(now.getHours()).padStart(2, '0'); // <-- Ajuste de 2 dígitos
+      const currentHour = String(now.getHours()).padStart(2, '0');
+      const currentMinute = String(now.getMinutes()).padStart(2, '0');
 
       const travelDate = `${year}-${month}-${day}`;
+
+      // Creamos un string con la hora exacta (ej. "12:44") para comparar
+      const exactCurrentTime = `${currentHour}:${currentMinute}`;
 
       // Proxy local de Vite
       const targetUrl = `/api/timetables?lang=ca&fullResponse=true&originStationId=${origin}&destinationStationId=${destination}&travelingOn=${travelDate}&fromTime=${currentHour}`;
@@ -59,7 +63,15 @@ export default function App() {
       const data = await response.json();
 
       if (data.result && data.result.items) {
-        const formattedTrains = data.result.items.map((item, index) => {
+
+        // 1. NUEVO: Filtramos los trenes que ya salieron comparando los minutos
+        const upcomingTrains = data.result.items.filter(item => {
+          const departure = item.departsAtOrigin.substring(0, 5); // ej. "12:05"
+          return departure >= exactCurrentTime; // Solo pasan los que sean >= "12:44"
+        });
+
+        // 2. Mapeamos la lista ya filtrada
+        const formattedTrains = upcomingTrains.map((item, index) => {
           const departure = item.departsAtOrigin.substring(0, 5);
           const arrival = item.arrivesAtDestination.substring(0, 5);
           const durationStr = item.duration.substring(3, 5);
@@ -76,6 +88,7 @@ export default function App() {
           };
         });
 
+        // 3. Guardamos los próximos 5
         setTrains(formattedTrains.slice(0, 5));
       } else {
         setTrains([]);
@@ -84,11 +97,11 @@ export default function App() {
     } catch (err) {
       console.error("Fallo detallado de la petición:", err);
       setTrains([]);
-      setError(true); // <-- Manejo de error más limpio
+      setError(true);
     } finally {
       setLoading(false);
     }
-  }, [origin, destination]); // Dependencias del callback
+  }, [origin, destination]);
 
   // Disparar la búsqueda al cambiar rutas
   useEffect(() => {
