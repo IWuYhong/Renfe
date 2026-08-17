@@ -37,7 +37,6 @@ export default function App() {
   }, [origin, destination]);
 
   const fetchTrains = async () => {
-    // Evitar búsqueda si el origen y destino son el mismo
     if (origin === destination) {
       setTrains([]);
       return;
@@ -53,12 +52,11 @@ export default function App() {
 
       const travelDate = `${year}-${month}-${day}`;
 
-      // Inyectamos las variables dinámicas de origin y destination en la URL
-      const targetUrl = `https://serveisgrs.rodalies.gencat.cat/api/timetables?lang=ca&fullResponse=true&originStationId=${origin}&destinationStationId=${destination}&travelingOn=${travelDate}&fromTime=${currentHour}`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+      // Llamamos a nuestro proxy local de Vite. ¡Adiós bloqueos CORS!
+      const targetUrl = `/api/timetables?lang=ca&fullResponse=true&originStationId=${origin}&destinationStationId=${destination}&travelingOn=${travelDate}&fromTime=${currentHour}`;
 
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error('Error al conectar con la API');
+      const response = await fetch(targetUrl);
+      if (!response.ok) throw new Error('Error de conexión con Rodalies');
 
       const data = await response.json();
 
@@ -82,11 +80,11 @@ export default function App() {
 
         setTrains(formattedTrains.slice(0, 5));
       } else {
-        setTrains([]); // Si no hay trenes para esa ruta
+        setTrains([]);
       }
 
     } catch (error) {
-      console.warn("Fallo en la petición:", error);
+      console.error("Fallo detallado de la petición:", error);
       setTrains([{ id: 1, departure: '--:--', arrival: '--:--', duration: '--', status: 'Error', type: 'retraso', line: '---' }]);
     } finally {
       setLoading(false);
