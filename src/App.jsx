@@ -55,7 +55,7 @@ export default function App() {
 
       // Inyectamos las variables dinámicas de origin y destination en la URL
       const targetUrl = `https://serveisgrs.rodalies.gencat.cat/api/timetables?lang=ca&fullResponse=true&originStationId=${origin}&destinationStationId=${destination}&travelingOn=${travelDate}&fromTime=${currentHour}`;
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
       const response = await fetch(proxyUrl);
       if (!response.ok) throw new Error('Error al conectar con la API');
