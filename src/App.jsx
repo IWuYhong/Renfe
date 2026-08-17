@@ -12,7 +12,7 @@ const STATIONS = [
   { id: '71705', name: 'Cunit' },
   { id: '71706', name: 'Segur de Calafell' },
   { id: '71708', name: 'Sant Vicenç de Calders' },
-  { id: '71400', name: 'Tarragona' }
+  //{ id: '71400', name: 'Tarragona' }
 ];
 
 export default function App() {
