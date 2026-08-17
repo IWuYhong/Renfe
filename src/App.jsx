@@ -60,7 +60,7 @@ export default function App() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{ fontSize: '11px', display: 'block', marginBottom: '2px' }}>Tramo Clave</span>
-          <p style={{ fontWeight: 500, color: 'var(--text-h)', fontSize: '13px' }}>Castelldefels ➔ Segur ➔ Cunit</p>
+          <p style={{ fontWeight: 500, color: 'var(--text-h)', fontSize: '13px' }}>Cunit ➔ Segur ➔ Castelldefels</p>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="app-footer">
-        Diseñado a medida • Barcelona - Castelldefels - Segur - Cunit
+        Hecho con ❤️ por Richard
       </footer>
 
     </div>
